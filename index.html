@@ -1,0 +1,429 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>Time Recording</title>
+<style>
+  :root{
+    --bg:#f4f6f5; --panel:#ffffff; --ink:#1a2421; --muted:#6b776f;
+    --line:#e3e8e5; --accent:#0f8a6f; --accent-d:#0b6d57; --danger:#c0392b;
+    --warn:#b4790a; --chip:#e7f5f0; --shadow:0 1px 3px rgba(16,24,20,.08),0 1px 2px rgba(16,24,20,.05);
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:-apple-system,"Segoe UI",system-ui,sans-serif;background:var(--bg);color:var(--ink);font-size:14px}
+  #authBox{max-width:360px;margin:80px auto;background:var(--panel);padding:28px;border-radius:16px;box-shadow:var(--shadow)}
+  #authBox h1{font-size:18px;margin:0 0 20px;text-align:center}
+  #authBox input{width:100%;padding:11px 12px;margin-bottom:10px;border:1px solid var(--line);border-radius:10px;font-size:14px}
+  #authBox button{width:100%;padding:11px;border:none;border-radius:10px;background:var(--accent);color:#fff;font-size:14px;font-weight:600;cursor:pointer;margin-bottom:8px}
+  #authBox button.secondary{background:#fff;color:var(--accent);border:1px solid var(--accent)}
+  #authError{color:var(--danger);font-size:13px;min-height:18px;text-align:center}
+  #appBox{display:none}
+  header{background:var(--panel);border-bottom:1px solid var(--line);padding:14px 24px;display:flex;align-items:center;gap:14px;position:sticky;top:0;z-index:20;flex-wrap:wrap}
+  header h1{font-size:17px;margin:0;font-weight:700}
+  header .spacer{flex:1}
+  .pill{font-size:12px;background:var(--chip);color:var(--accent-d);padding:4px 11px;border-radius:20px;font-weight:600}
+  button{font-family:inherit;font-size:13px;border-radius:10px;border:1px solid var(--line);background:#fff;color:var(--ink);padding:9px 14px;cursor:pointer;transition:.12s}
+  button:hover{border-color:var(--accent);color:var(--accent)}
+  button.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+  button.primary:hover{background:var(--accent-d);color:#fff}
+  button.danger-ghost{border:none;background:none;color:var(--danger);padding:4px 8px}
+  button.link{border:none;background:none;color:var(--accent);padding:4px 8px;font-weight:600}
+  main{padding:22px;max-width:1100px;margin:0 auto}
+  .toolbar{display:flex;gap:10px;align-items:end;flex-wrap:wrap;margin-bottom:18px}
+  .field{display:flex;flex-direction:column;gap:4px}
+  .field label{font-size:11px;text-transform:uppercase;letter-spacing:.04em;color:var(--muted);font-weight:700}
+  input,select,textarea{font-family:inherit;font-size:13px;padding:9px 10px;border:1px solid var(--line);border-radius:10px;background:#fff;color:var(--ink)}
+  input:focus,select:focus,textarea:focus{outline:2px solid rgba(15,138,111,.2);border-color:var(--accent)}
+  .summary-bar{display:flex;gap:14px;margin-bottom:18px;flex-wrap:wrap}
+  .tile{flex:1;min-width:130px;background:var(--panel);border-radius:14px;padding:14px 16px;box-shadow:var(--shadow)}
+  .tile .v{font-size:22px;font-weight:700}
+  .tile .l{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-top:2px}
+  .month-group{background:var(--panel);border-radius:16px;box-shadow:var(--shadow);margin-bottom:16px;overflow:hidden}
+  .month-head{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;background:#fafbfa;border-bottom:1px solid var(--line);cursor:pointer}
+  .month-head h3{margin:0;font-size:15px}
+  .month-head .total{font-size:13px;color:var(--muted);font-weight:600}
+  .entry-row{display:flex;gap:14px;align-items:center;padding:13px 18px;border-bottom:1px solid var(--line)}
+  .entry-row:last-child{border-bottom:none}
+  .entry-main{flex:1;min-width:0}
+  .entry-top{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:3px}
+  .tag{display:inline-block;background:var(--chip);color:var(--accent-d);border-radius:20px;padding:2px 10px;font-size:12px;font-weight:600}
+  .entry-user{font-size:12px;color:var(--muted)}
+  .entry-topic{font-size:14px;font-weight:600}
+  .entry-info{font-size:12.5px;color:var(--muted);margin-top:2px}
+  .entry-days{font-variant-numeric:tabular-nums;font-weight:700;font-size:15px;min-width:50px;text-align:right}
+  .entry-actions{display:flex;gap:4px}
+  .empty{padding:50px;text-align:center;color:var(--muted)}
+  .overlay{position:fixed;inset:0;background:rgba(16,24,20,.4);display:none;align-items:flex-start;justify-content:center;z-index:50;padding:50px 16px;overflow:auto}
+  .overlay.show{display:flex}
+  .modal{background:#fff;border-radius:18px;width:100%;max-width:480px;box-shadow:0 20px 50px rgba(16,24,20,.25)}
+  .modal h2{margin:0;padding:18px 22px;border-bottom:1px solid var(--line);font-size:16px}
+  .modal .body{padding:20px 22px;display:grid;gap:14px}
+  .modal .row2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+  .modal .foot{padding:16px 22px;border-top:1px solid var(--line);display:flex;justify-content:flex-end;gap:10px;background:#fafbfa}
+  .modal label{font-size:12px;font-weight:700;color:var(--muted);display:block;margin-bottom:5px}
+  .modal input,.modal select,.modal textarea{width:100%}
+  .req::after{content:" *";color:var(--danger)}
+  #fileInput{display:none}
+</style>
+</head>
+<body>
+
+<div id="authBox">
+  <h1>⏱️ Time Recording</h1>
+  <input type="email" id="email" placeholder="Email" />
+  <input type="password" id="password" placeholder="Password" />
+  <div id="authError"></div>
+  <button onclick="signIn()">Log in</button>
+  <button class="secondary" onclick="signUp()">Create account</button>
+</div>
+
+<div id="appBox">
+  <header>
+    <h1>⏱️ Time Recording</h1>
+    <span class="pill" id="roleBadge"></span>
+    <span class="spacer"></span>
+    <select id="viewMode" style="display:none"><option value="mine">My entries</option><option value="all">All employees</option></select>
+    <button id="exportBtn">⬇ Export CSV</button>
+    <button id="importBtn">⬆ Import CSV</button>
+    <input type="file" id="fileInput" accept=".csv" />
+    <button onclick="logOut()">Log out</button>
+  </header>
+
+  <main>
+    <div class="toolbar">
+      <div class="field"><label>Year</label><select id="fYear"></select></div>
+      <div class="field"><label>Month</label><select id="fMonth"></select></div>
+      <div class="field"><label>Task</label><select id="fTask"></select></div>
+      <div class="field" id="fNameWrap" style="display:none"><label>Employee</label><input id="fName" placeholder="search name/email" /></div>
+      <button onclick="clearFilters()">Clear</button>
+      <button class="primary" onclick="openEntry(null)">➕ New entry</button>
+    </div>
+
+    <div class="summary-bar" id="summaryBar"></div>
+    <div id="groupsContainer"></div>
+  </main>
+</div>
+
+<div class="overlay" id="entryOverlay">
+  <div class="modal">
+    <h2 id="entryTitle">New entry</h2>
+    <div class="body">
+      <div class="row2">
+        <div><label class="req">Year</label><select id="eYear"></select></div>
+        <div><label class="req">Month</label><select id="eMonth"></select></div>
+      </div>
+      <div><label class="req">Task / category</label><select id="eTask"></select></div>
+      <div><label>Topic</label><input id="eTopic" placeholder="what was done" /></div>
+      <div><label class="req">Working days</label><input id="eDays" type="number" step="0.5" min="0" /></div>
+      <div><label>Further information</label><textarea id="eInfo" rows="3"></textarea></div>
+    </div>
+    <div class="foot">
+      <button class="danger-ghost" id="entryDelete" style="margin-right:auto;display:none">Delete</button>
+      <button onclick="closeEntry()">Cancel</button>
+      <button class="primary" onclick="saveEntry()">Save</button>
+    </div>
+  </div>
+</div>
+
+<script type="module">
+  import { initializeApp } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-app.js";
+  import {
+    getAuth, createUserWithEmailAndPassword, signInWithEmailAndPassword,
+    signOut, onAuthStateChanged
+  } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-auth.js";
+  import {
+    getFirestore, collection, addDoc, doc, setDoc, getDoc, updateDoc, deleteDoc,
+    onSnapshot, query, where, serverTimestamp
+  } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
+
+  // ---- PASTE YOUR firebaseConfig HERE ----
+ // Import the functions you need from the SDKs you need
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
+
+// Your web app's Firebase configuration
+ const firebaseConfig = {
+    apiKey: "AIzaSyAmMRTe1PHkO-eeSYijXDpclN6PJ9jVhyc",
+    authDomain: "timesheeticm.firebaseapp.com",
+    projectId: "timesheeticm",
+    storageBucket: "timesheeticm.firebasestorage.app",
+    messagingSenderId: "23539994581",
+    appId: "1:23539994581:web:3eeb88dfe3ba979946375c"
+  };
+
+
+  // -----------------------------------------
+
+  const app = initializeApp(firebaseConfig);
+  const auth = getAuth(app);
+  const db = getFirestore(app);
+
+  const TASKS = ["DEVK","CIS Demo System","Agent 360","Target and Competitions","ALM - Agent Onboarding",
+    "ICM AI Prototype","Data Sources","Broker Transfer","Maintenance","Vacation/Holidays","Sickness",
+    "ALM - Portfolio Transfer","SAP S4HANA - FPS1 UX","BPI","SAP S4HANA - FPS1 DPP","SAP CoE topics",
+    "SAP Regression Testing","SAP Development Process","Internal Meetings (JF, Weekly, Maintenance)",
+    "Others","SAP S4HANA - FPS1 Translation","MassMutual","AI Knowledge Base","AI ICM Agent",
+    "Trainings","BarmeniaGothaer","Empower"];
+  const MONTHS = ["January","February","March","April","May","June","July","August","September","October","November","December"];
+  const thisYear = new Date().getFullYear();
+  const YEARS = []; for (let y = thisYear - 2; y <= thisYear + 2; y++) YEARS.push(String(y));
+
+  let currentUser = null;
+  let role = "user";
+  let entries = [];
+  let unsubEntries = null;
+  let editId = null;
+  const filters = { year: "", month: "", task: "", name: "" };
+
+  function fillSelect(sel, items, firstLabel) {
+    sel.innerHTML = "";
+    if (firstLabel != null) { const o = document.createElement("option"); o.value = ""; o.textContent = firstLabel; sel.appendChild(o); }
+    items.forEach(v => { const o = document.createElement("option"); o.value = v; o.textContent = v; sel.appendChild(o); });
+  }
+
+  function esc(s) { const d = document.createElement("div"); d.textContent = s ?? ""; return d.innerHTML; }
+
+  // ---------- auth ----------
+  window.signUp = async () => {
+    const email = document.getElementById("email").value.trim();
+    const password = document.getElementById("password").value;
+    try { await createUserWithEmailAndPassword(auth, email, password); }
+    catch (e) { document.getElementById("authError").textContent = e.message; }
+  };
+  window.signIn = async () => {
+    const email = document.getElementById("email").value.trim();
+    const password = document.getElementById("password").value;
+    try { await signInWithEmailAndPassword(auth, email, password); }
+    catch (e) { document.getElementById("authError").textContent = e.message; }
+  };
+  window.logOut = () => signOut(auth);
+
+  onAuthStateChanged(auth, async (user) => {
+    if (unsubEntries) { unsubEntries(); unsubEntries = null; }
+    if (user) {
+      currentUser = user;
+      const uref = doc(db, "users", user.uid);
+      const snap = await getDoc(uref);
+      if (!snap.exists()) {
+        await setDoc(uref, { email: user.email, role: "user" });
+        role = "user";
+      } else {
+        role = snap.data().role || "user";
+      }
+      document.getElementById("authBox").style.display = "none";
+      document.getElementById("appBox").style.display = "block";
+      document.getElementById("roleBadge").textContent = role === "admin" ? "Admin · " + user.email : user.email;
+      document.getElementById("viewMode").style.display = role === "admin" ? "inline-block" : "none";
+      document.getElementById("fNameWrap").style.display = role === "admin" ? "flex" : "none";
+      initFormOptions();
+      subscribeEntries();
+    } else {
+      currentUser = null;
+      document.getElementById("authBox").style.display = "block";
+      document.getElementById("appBox").style.display = "none";
+    }
+  });
+
+  function initFormOptions() {
+    fillSelect(document.getElementById("fYear"), YEARS, "All years");
+    fillSelect(document.getElementById("fMonth"), MONTHS, "All months");
+    fillSelect(document.getElementById("fTask"), TASKS, "All tasks");
+    fillSelect(document.getElementById("eYear"), YEARS, null);
+    fillSelect(document.getElementById("eMonth"), MONTHS, null);
+    fillSelect(document.getElementById("eTask"), TASKS, null);
+  }
+
+  function subscribeEntries() {
+    if (unsubEntries) unsubEntries();
+    const viewMode = document.getElementById("viewMode").value;
+    let q;
+    if (role === "admin" && viewMode === "all") {
+      q = collection(db, "timeEntries");
+    } else {
+      q = query(collection(db, "timeEntries"), where("userId", "==", currentUser.uid));
+    }
+    unsubEntries = onSnapshot(q, (snap) => {
+      entries = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+      render();
+    });
+  }
+
+  document.getElementById("viewMode").addEventListener("change", subscribeEntries);
+  document.getElementById("fYear").addEventListener("change", e => { filters.year = e.target.value; render(); });
+  document.getElementById("fMonth").addEventListener("change", e => { filters.month = e.target.value; render(); });
+  document.getElementById("fTask").addEventListener("change", e => { filters.task = e.target.value; render(); });
+  document.getElementById("fName").addEventListener("input", e => { filters.name = e.target.value.trim().toLowerCase(); render(); });
+
+  window.clearFilters = () => {
+    filters.year = ""; filters.month = ""; filters.task = ""; filters.name = "";
+    document.getElementById("fYear").value = "";
+    document.getElementById("fMonth").value = "";
+    document.getElementById("fTask").value = "";
+    document.getElementById("fName").value = "";
+    render();
+  };
+
+  function passes(e) {
+    if (filters.year && String(e.year) !== filters.year) return false;
+    if (filters.month && e.month !== filters.month) return false;
+    if (filters.task && e.task !== filters.task) return false;
+    if (filters.name && !(e.userEmail || "").toLowerCase().includes(filters.name)) return false;
+    return true;
+  }
+
+  function monthKey(e) { return e.year + "-" + String(MONTHS.indexOf(e.month)).padStart(2, "0"); }
+
+  function render() {
+    const filtered = entries.filter(passes);
+    const totalDays = filtered.reduce((s, e) => s + (parseFloat(e.days) || 0), 0);
+    const byMonth = {};
+    filtered.forEach(e => { const k = monthKey(e); (byMonth[k] = byMonth[k] || []).push(e); });
+    const keys = Object.keys(byMonth).sort().reverse();
+
+    document.getElementById("summaryBar").innerHTML = `
+      <div class="tile"><div class="v">${filtered.length}</div><div class="l">Entries</div></div>
+      <div class="tile"><div class="v">${(+totalDays.toFixed(2))}</div><div class="l">Total days</div></div>
+      <div class="tile"><div class="v">${keys.length}</div><div class="l">Months</div></div>`;
+
+    const container = document.getElementById("groupsContainer");
+    if (keys.length === 0) { container.innerHTML = '<div class="empty">No entries match the current filters.</div>'; return; }
+
+    container.innerHTML = keys.map(k => {
+      const rows = byMonth[k].sort((a, b) => (b.createdAtMs || 0) - (a.createdAtMs || 0));
+      const monthTotal = rows.reduce((s, e) => s + (parseFloat(e.days) || 0), 0);
+      const label = rows[0].month + " " + rows[0].year;
+      const rowsHtml = rows.map(e => {
+        const canEdit = role === "admin" || e.userId === currentUser.uid;
+        return `
+        <div class="entry-row">
+          <div class="entry-main">
+            <div class="entry-top">
+              <span class="tag">${esc(e.task)}</span>
+              ${role === "admin" ? `<span class="entry-user">${esc(e.userEmail)}</span>` : ""}
+            </div>
+            <div class="entry-topic">${esc(e.topic) || "<span style=\\"color:var(--muted)\\">(no topic)</span>"}</div>
+            ${e.info ? `<div class="entry-info">${esc(e.info)}</div>` : ""}
+          </div>
+          <div class="entry-days">${e.days}</div>
+          <div class="entry-actions">
+            ${canEdit ? `<button class="link" data-edit="${e.id}">Edit</button><button class="danger-ghost" data-del="${e.id}">Delete</button>` : ""}
+          </div>
+        </div>`;
+      }).join("");
+      return `
+        <div class="month-group">
+          <div class="month-head"><h3>${esc(label)}</h3><span class="total">${(+monthTotal.toFixed(2))} days</span></div>
+          ${rowsHtml}
+        </div>`;
+    }).join("");
+
+    container.querySelectorAll("[data-edit]").forEach(b => b.onclick = () => openEntry(b.dataset.edit));
+    container.querySelectorAll("[data-del]").forEach(b => b.onclick = () => removeEntry(b.dataset.del));
+  }
+
+  // ---------- entry modal ----------
+  window.openEntry = (id) => {
+    editId = id;
+    const e = id ? entries.find(x => x.id === id) : null;
+    document.getElementById("eYear").value = e ? e.year : String(thisYear);
+    document.getElementById("eMonth").value = e ? e.month : MONTHS[new Date().getMonth()];
+    document.getElementById("eTask").value = e ? e.task : TASKS[0];
+    document.getElementById("eTopic").value = e ? e.topic : "";
+    document.getElementById("eDays").value = e ? e.days : "";
+    document.getElementById("eInfo").value = e ? e.info : "";
+    document.getElementById("entryTitle").textContent = id ? "Edit entry" : "New entry";
+    document.getElementById("entryDelete").style.display = id ? "" : "none";
+    document.getElementById("entryDelete").onclick = () => removeEntry(id);
+    document.getElementById("entryOverlay").classList.add("show");
+  };
+  window.closeEntry = () => { document.getElementById("entryOverlay").classList.remove("show"); editId = null; };
+
+  window.saveEntry = async () => {
+    const year = document.getElementById("eYear").value;
+    const month = document.getElementById("eMonth").value;
+    const task = document.getElementById("eTask").value;
+    const topic = document.getElementById("eTopic").value.trim();
+    const days = document.getElementById("eDays").value;
+    const info = document.getElementById("eInfo").value.trim();
+    if (!year || !month || !task || days === "") { alert("Year, Month, Task and Days are required."); return; }
+
+    if (editId) {
+      const ref = doc(db, "timeEntries", editId);
+      await updateDoc(ref, { year, month, task, topic, days, info });
+    } else {
+      await addDoc(collection(db, "timeEntries"), {
+        userId: currentUser.uid, userEmail: currentUser.email,
+        year, month, task, topic, days, info,
+        createdAt: serverTimestamp(), createdAtMs: Date.now()
+      });
+    }
+    closeEntry();
+  };
+
+  async function removeEntry(id) {
+    if (!confirm("Delete this entry?")) return;
+    await deleteDoc(doc(db, "timeEntries", id));
+    closeEntry();
+  }
+
+  // ---------- CSV export ----------
+  function csvEscape(v) {
+    const s = String(v ?? "");
+    return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
+  }
+  document.getElementById("exportBtn").onclick = () => {
+    const filtered = entries.filter(passes);
+    const header = ["Year", "Month", "Employee", "Task", "Topic", "Days", "Info"];
+    const rows = filtered.map(e => [e.year, e.month, e.userEmail, e.task, e.topic, e.days, e.info]);
+    const csv = [header, ...rows].map(r => r.map(csvEscape).join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv" });
+    const a = document.createElement("a");
+    a.href = URL.createObjectURL(blob);
+    a.download = "time-recording-export.csv";
+    a.click();
+    URL.revokeObjectURL(a.href);
+  };
+
+  // ---------- CSV import ----------
+  document.getElementById("importBtn").onclick = () => document.getElementById("fileInput").click();
+  document.getElementById("fileInput").onchange = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    const reader = new FileReader();
+    reader.onload = async () => {
+      const text = reader.result;
+      const lines = text.split(/\r?\n/).filter(l => l.trim().length);
+      if (lines.length < 2) { alert("CSV has no data rows."); return; }
+      const header = lines[0].split(",").map(h => h.trim().toLowerCase());
+      const idx = (name) => header.indexOf(name);
+      const iYear = idx("year"), iMonth = idx("month"), iTask = idx("task"), iTopic = idx("topic"), iDays = idx("days"), iInfo = idx("info");
+      if (iYear < 0 || iMonth < 0 || iTask < 0 || iDays < 0) { alert("CSV must include Year, Month, Task, Days columns."); return; }
+      let count = 0;
+      for (let i = 1; i < lines.length; i++) {
+        const cells = lines[i].match(/(".*?"|[^,]+)(?=,|$)/g) || [];
+        const clean = cells.map(c => c.replace(/^"|"$/g, "").replace(/""/g, '"').trim());
+        const year = clean[iYear], month = clean[iMonth], task = clean[iTask], days = clean[iDays];
+        if (!year || !month || !task || days === "") continue;
+        await addDoc(collection(db, "timeEntries"), {
+          userId: currentUser.uid, userEmail: currentUser.email,
+          year, month, task,
+          topic: iTopic >= 0 ? clean[iTopic] : "",
+          days, info: iInfo >= 0 ? clean[iInfo] : "",
+          createdAt: serverTimestamp(), createdAtMs: Date.now()
+        });
+        count++;
+      }
+      alert("Imported " + count + " entries under your account.");
+      e.target.value = "";
+    };
+    reader.readAsText(file);
+  };
+
+  document.getElementById("entryOverlay").addEventListener("click", (e) => {
+    if (e.target === document.getElementById("entryOverlay")) closeEntry();
+  });
+</script>
+
+</body>
+</html>
