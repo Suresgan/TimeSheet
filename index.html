@@ -302,7 +302,7 @@
               <span class="tag">${esc(e.task)}</span>
               ${role === "admin" ? `<span class="entry-user">${esc(e.userEmail)}</span>` : ""}
             </div>
-            <div class="entry-topic">${esc(e.topic) || "<span style=\\"color:var(--muted)\\">(no topic)</span>"}</div>
+            <div class="entry-topic">${esc(e.topic) || '<span style="color:var(--muted)">(no topic)</span>'}</div>
             ${e.info ? `<div class="entry-info">${esc(e.info)}</div>` : ""}
           </div>
           <div class="entry-days">${e.days}</div>
