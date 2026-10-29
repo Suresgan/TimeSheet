@@ -76,6 +76,11 @@
 </head>
 <body>
 
+<div id="globalLoader" style="display:none;position:fixed;inset:0;background:rgba(244,246,245,0.92);z-index:100;align-items:center;justify-content:center;flex-direction:column;gap:14px">
+  <div style="width:36px;height:36px;border:3px solid var(--line);border-top-color:var(--accent);border-radius:50%;animation:spin .7s linear infinite"></div>
+  <div style="color:var(--muted);font-size:14px" id="globalLoaderText">Loading...</div>
+</div>
+
 <div id="authBox">
   <h1>⏱️ Time Recording</h1>
 
@@ -167,7 +172,7 @@
   } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
 
   // ---- PASTE YOUR firebaseConfig HERE ----
- const firebaseConfig = {
+  const firebaseConfig = {
     apiKey: "AIzaSyAmMRTe1PHkO-eeSYijXDpclN6PJ9jVhyc",
     authDomain: "timesheeticm.firebaseapp.com",
     projectId: "timesheeticm",
@@ -222,6 +227,14 @@
     }
   }
 
+  function showGlobalLoader(text) {
+    document.getElementById("globalLoaderText").textContent = text || "Loading...";
+    document.getElementById("globalLoader").style.display = "flex";
+  }
+  function hideGlobalLoader() {
+    document.getElementById("globalLoader").style.display = "none";
+  }
+
   window.showRegister = () => {
     document.getElementById("authError").textContent = "";
     document.getElementById("authSuccess").textContent = "";
@@ -248,10 +261,12 @@
     document.getElementById("authError").textContent = "";
     if (!email || !password) { document.getElementById("authError").textContent = "Enter email and password."; return; }
     setBtnLoading(btn, true, "Logging in...");
+    showGlobalLoader("Logging in...");
     try {
       await signInWithEmailAndPassword(auth, email, password);
     } catch (e) {
       document.getElementById("authError").textContent = e.message;
+      hideGlobalLoader();
     } finally {
       setBtnLoading(btn, false);
     }
@@ -278,6 +293,7 @@
     }
 
     setBtnLoading(btn, true, "Creating account...");
+    showGlobalLoader("Creating your account...");
     suppressAuthUI = true;
     try {
       const cred = await createUserWithEmailAndPassword(auth, email, password);
@@ -301,6 +317,7 @@
       document.getElementById("regError").textContent = e.message;
     } finally {
       setBtnLoading(btn, false);
+      hideGlobalLoader();
     }
   };
 
@@ -332,6 +349,7 @@
       document.getElementById("authBox").style.display = "block";
       document.getElementById("appBox").style.display = "none";
     }
+    hideGlobalLoader();
   });
 
   function initFormOptions() {
