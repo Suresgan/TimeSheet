@@ -23,7 +23,6 @@
   .switchLink{text-align:center;font-size:13px;color:var(--muted);margin-top:6px}
   .switchLink a{color:var(--accent);cursor:pointer;font-weight:600;text-decoration:none}
   .spinner{width:14px;height:14px;border:2px solid rgba(255,255,255,.5);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0}
-  .spinner.dark{border:2px solid rgba(15,138,111,.3);border-top-color:var(--accent)}
   @keyframes spin{to{transform:rotate(360deg)}}
   #appBox{display:none}
   header{background:var(--panel);border-bottom:1px solid var(--line);padding:14px 24px;display:flex;align-items:center;gap:14px;position:sticky;top:0;z-index:20;flex-wrap:wrap}
@@ -97,6 +96,11 @@
     <input type="text" id="regEmployeeId" placeholder="Employee ID" />
     <input type="email" id="regEmail" placeholder="Email (this will be your username)" />
     <input type="password" id="regPassword" placeholder="Password" />
+    <select id="regRole">
+      <option value="user">Register as: Employee</option>
+      <option value="admin">Register as: Admin</option>
+    </select>
+    <input type="text" id="regAdminCode" placeholder="Admin access code" style="display:none" />
     <div id="regError"></div>
     <button id="registerBtn" onclick="submitRegister()">Create account</button>
     <div class="switchLink">Already have an account? <a onclick="showLogin()">Log in</a></div>
@@ -173,6 +177,10 @@
   };
   // -----------------------------------------
 
+  // ---- Set your own admin access code here (share only with people who should be admins) ----
+  const ADMIN_ACCESS_CODE = "CHANGE-THIS-CODE-123";
+  // ----------------------------------------------------------------------------------------
+
   const app = initializeApp(firebaseConfig);
   const auth = getAuth(app);
   const db = getFirestore(app);
@@ -188,7 +196,7 @@
   const YEARS = []; for (let y = thisYear - 2; y <= thisYear + 2; y++) YEARS.push(String(y));
 
   let currentUser = null;
-  let profile = null;   // { firstName, lastName, employeeId, email, role }
+  let profile = null;
   let role = "user";
   let entries = [];
   let unsubEntries = null;
@@ -203,7 +211,6 @@
   }
   function esc(s) { const d = document.createElement("div"); d.textContent = s ?? ""; return d.innerHTML; }
 
-  // ---------- button loading helper ----------
   function setBtnLoading(btn, loading, loadingLabel) {
     if (loading) {
       btn.dataset.originalHtml = btn.innerHTML;
@@ -215,7 +222,6 @@
     }
   }
 
-  // ---------- auth view toggling ----------
   window.showRegister = () => {
     document.getElementById("authError").textContent = "";
     document.getElementById("authSuccess").textContent = "";
@@ -231,7 +237,10 @@
     document.getElementById("authSuccess").textContent = successMsg || "";
   };
 
-  // ---------- auth actions ----------
+  document.getElementById("regRole").addEventListener("change", (e) => {
+    document.getElementById("regAdminCode").style.display = e.target.value === "admin" ? "block" : "none";
+  });
+
   window.signIn = async () => {
     const btn = document.getElementById("loginBtn");
     const email = document.getElementById("loginEmail").value.trim();
@@ -255,17 +264,26 @@
     const employeeId = document.getElementById("regEmployeeId").value.trim();
     const email = document.getElementById("regEmail").value.trim();
     const password = document.getElementById("regPassword").value;
+    const wantsAdmin = document.getElementById("regRole").value === "admin";
+    const adminCode = document.getElementById("regAdminCode").value.trim();
     document.getElementById("regError").textContent = "";
+
     if (!firstName || !lastName || !employeeId || !email || !password) {
       document.getElementById("regError").textContent = "All fields are required.";
       return;
     }
+    if (wantsAdmin && adminCode !== ADMIN_ACCESS_CODE) {
+      document.getElementById("regError").textContent = "Incorrect admin access code.";
+      return;
+    }
+
     setBtnLoading(btn, true, "Creating account...");
     suppressAuthUI = true;
     try {
       const cred = await createUserWithEmailAndPassword(auth, email, password);
       await setDoc(doc(db, "users", cred.user.uid), {
-        firstName, lastName, employeeId, email, role: "user"
+        firstName, lastName, employeeId, email,
+        role: wantsAdmin ? "admin" : "user"
       });
       await signOut(auth);
       suppressAuthUI = false;
@@ -274,6 +292,9 @@
       document.getElementById("regEmployeeId").value = "";
       document.getElementById("regEmail").value = "";
       document.getElementById("regPassword").value = "";
+      document.getElementById("regAdminCode").value = "";
+      document.getElementById("regRole").value = "user";
+      document.getElementById("regAdminCode").style.display = "none";
       showLogin("Account created. Please log in.");
     } catch (e) {
       suppressAuthUI = false;
@@ -413,7 +434,6 @@
     container.querySelectorAll("[data-del]").forEach(b => b.onclick = () => removeEntry(b.dataset.del));
   }
 
-  // ---------- entry modal ----------
   window.openEntry = (id) => {
     editId = id;
     const e = id ? entries.find(x => x.id === id) : null;
@@ -469,7 +489,6 @@
     closeEntry();
   }
 
-  // ---------- CSV export ----------
   function csvEscape(v) {
     const s = String(v ?? "");
     return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
@@ -481,8 +500,9 @@
       const filtered = entries.filter(passes);
       const header = ["Employee Name", "Employee ID", "Year", "Month", "Task", "Topic", "Days", "Info"];
       const rows = filtered.map(e => [e.employeeName || "", e.employeeId || "", e.year, e.month, e.task, e.topic, e.days, e.info]);
-      const csv = [header, ...rows].map(r => r.map(csvEscape).join(",")).join("\n");
-      const blob = new Blob([csv], { type: "text/csv" });
+      const lines = [header, ...rows].map(r => r.map(csvEscape).join(","));
+      const csv = "sep=,\r\n" + lines.join("\r\n");
+      const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8;" });
       const a = document.createElement("a");
       a.href = URL.createObjectURL(blob);
       a.download = "time-recording-export.csv";
@@ -493,7 +513,6 @@
     }
   };
 
-  // ---------- CSV import ----------
   document.getElementById("importBtn").onclick = () => document.getElementById("fileInput").click();
   document.getElementById("fileInput").onchange = (e) => {
     const file = e.target.files[0];
@@ -503,8 +522,10 @@
     const reader = new FileReader();
     reader.onload = async () => {
       try {
-        const text = reader.result;
-        const lines = text.split(/\r?\n/).filter(l => l.trim().length);
+        let text = reader.result;
+        if (text.charCodeAt(0) === 0xFEFF) text = text.slice(1);
+        let lines = text.split(/\r?\n/).filter(l => l.trim().length);
+        if (lines[0] && lines[0].trim().toLowerCase().startsWith("sep=")) lines = lines.slice(1);
         if (lines.length < 2) { alert("CSV has no data rows."); return; }
         const header = lines[0].split(",").map(h => h.trim().toLowerCase());
         const idx = (name) => header.indexOf(name);
