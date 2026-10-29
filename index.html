@@ -12,19 +12,27 @@
   }
   *{box-sizing:border-box}
   body{margin:0;font-family:-apple-system,"Segoe UI",system-ui,sans-serif;background:var(--bg);color:var(--ink);font-size:14px}
-  #authBox{max-width:360px;margin:80px auto;background:var(--panel);padding:28px;border-radius:16px;box-shadow:var(--shadow)}
+  #authBox{max-width:400px;margin:60px auto;background:var(--panel);padding:28px;border-radius:16px;box-shadow:var(--shadow)}
   #authBox h1{font-size:18px;margin:0 0 20px;text-align:center}
-  #authBox input{width:100%;padding:11px 12px;margin-bottom:10px;border:1px solid var(--line);border-radius:10px;font-size:14px}
-  #authBox button{width:100%;padding:11px;border:none;border-radius:10px;background:var(--accent);color:#fff;font-size:14px;font-weight:600;cursor:pointer;margin-bottom:8px}
+  #authBox input,#authBox select{width:100%;padding:11px 12px;margin-bottom:10px;border:1px solid var(--line);border-radius:10px;font-size:14px}
+  #authBox button{width:100%;padding:11px;border:none;border-radius:10px;background:var(--accent);color:#fff;font-size:14px;font-weight:600;cursor:pointer;margin-bottom:8px;display:flex;align-items:center;justify-content:center;gap:8px}
   #authBox button.secondary{background:#fff;color:var(--accent);border:1px solid var(--accent)}
+  #authBox button:disabled{opacity:.7;cursor:not-allowed}
   #authError{color:var(--danger);font-size:13px;min-height:18px;text-align:center}
+  #authSuccess{color:var(--accent-d);font-size:13px;min-height:18px;text-align:center}
+  .switchLink{text-align:center;font-size:13px;color:var(--muted);margin-top:6px}
+  .switchLink a{color:var(--accent);cursor:pointer;font-weight:600;text-decoration:none}
+  .spinner{width:14px;height:14px;border:2px solid rgba(255,255,255,.5);border-top-color:#fff;border-radius:50%;animation:spin .7s linear infinite;flex-shrink:0}
+  .spinner.dark{border:2px solid rgba(15,138,111,.3);border-top-color:var(--accent)}
+  @keyframes spin{to{transform:rotate(360deg)}}
   #appBox{display:none}
   header{background:var(--panel);border-bottom:1px solid var(--line);padding:14px 24px;display:flex;align-items:center;gap:14px;position:sticky;top:0;z-index:20;flex-wrap:wrap}
   header h1{font-size:17px;margin:0;font-weight:700}
   header .spacer{flex:1}
   .pill{font-size:12px;background:var(--chip);color:var(--accent-d);padding:4px 11px;border-radius:20px;font-weight:600}
-  button{font-family:inherit;font-size:13px;border-radius:10px;border:1px solid var(--line);background:#fff;color:var(--ink);padding:9px 14px;cursor:pointer;transition:.12s}
+  button{font-family:inherit;font-size:13px;border-radius:10px;border:1px solid var(--line);background:#fff;color:var(--ink);padding:9px 14px;cursor:pointer;transition:.12s;display:inline-flex;align-items:center;gap:6px}
   button:hover{border-color:var(--accent);color:var(--accent)}
+  button:disabled{opacity:.7;cursor:not-allowed}
   button.primary{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
   button.primary:hover{background:var(--accent-d);color:#fff}
   button.danger-ghost{border:none;background:none;color:var(--danger);padding:4px 8px}
@@ -40,7 +48,7 @@
   .tile .v{font-size:22px;font-weight:700}
   .tile .l{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.04em;margin-top:2px}
   .month-group{background:var(--panel);border-radius:16px;box-shadow:var(--shadow);margin-bottom:16px;overflow:hidden}
-  .month-head{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;background:#fafbfa;border-bottom:1px solid var(--line);cursor:pointer}
+  .month-head{display:flex;justify-content:space-between;align-items:center;padding:14px 18px;background:#fafbfa;border-bottom:1px solid var(--line)}
   .month-head h3{margin:0;font-size:15px}
   .month-head .total{font-size:13px;color:var(--muted);font-weight:600}
   .entry-row{display:flex;gap:14px;align-items:center;padding:13px 18px;border-bottom:1px solid var(--line)}
@@ -71,11 +79,28 @@
 
 <div id="authBox">
   <h1>⏱️ Time Recording</h1>
-  <input type="email" id="email" placeholder="Email" />
-  <input type="password" id="password" placeholder="Password" />
-  <div id="authError"></div>
-  <button onclick="signIn()">Log in</button>
-  <button class="secondary" onclick="signUp()">Create account</button>
+
+  <div id="loginView">
+    <input type="email" id="loginEmail" placeholder="Email" />
+    <input type="password" id="loginPassword" placeholder="Password" />
+    <div id="authError"></div>
+    <div id="authSuccess"></div>
+    <button id="loginBtn" onclick="signIn()">Log in</button>
+    <div class="switchLink">Don't have an account? <a onclick="showRegister()">Create one</a></div>
+  </div>
+
+  <div id="registerView" style="display:none">
+    <div style="display:flex;gap:10px">
+      <input type="text" id="regFirstName" placeholder="First name" style="flex:1" />
+      <input type="text" id="regLastName" placeholder="Last name" style="flex:1" />
+    </div>
+    <input type="text" id="regEmployeeId" placeholder="Employee ID" />
+    <input type="email" id="regEmail" placeholder="Email (this will be your username)" />
+    <input type="password" id="regPassword" placeholder="Password" />
+    <div id="regError"></div>
+    <button id="registerBtn" onclick="submitRegister()">Create account</button>
+    <div class="switchLink">Already have an account? <a onclick="showLogin()">Log in</a></div>
+  </div>
 </div>
 
 <div id="appBox">
@@ -95,9 +120,9 @@
       <div class="field"><label>Year</label><select id="fYear"></select></div>
       <div class="field"><label>Month</label><select id="fMonth"></select></div>
       <div class="field"><label>Task</label><select id="fTask"></select></div>
-      <div class="field" id="fNameWrap" style="display:none"><label>Employee</label><input id="fName" placeholder="search name/email" /></div>
+      <div class="field" id="fNameWrap" style="display:none"><label>Employee</label><input id="fName" placeholder="search name/ID/email" /></div>
       <button onclick="clearFilters()">Clear</button>
-      <button class="primary" onclick="openEntry(null)">➕ New entry</button>
+      <button class="primary" id="newEntryBtn" onclick="openEntry(null)">➕ New entry</button>
     </div>
 
     <div class="summary-bar" id="summaryBar"></div>
@@ -121,7 +146,7 @@
     <div class="foot">
       <button class="danger-ghost" id="entryDelete" style="margin-right:auto;display:none">Delete</button>
       <button onclick="closeEntry()">Cancel</button>
-      <button class="primary" onclick="saveEntry()">Save</button>
+      <button class="primary" id="entrySaveBtn" onclick="saveEntry()">Save</button>
     </div>
   </div>
 </div>
@@ -138,11 +163,6 @@
   } from "https://www.gstatic.com/firebasejs/10.13.0/firebase-firestore.js";
 
   // ---- PASTE YOUR firebaseConfig HERE ----
- // Import the functions you need from the SDKs you need
-// TODO: Add SDKs for Firebase products that you want to use
-// https://firebase.google.com/docs/web/setup#available-libraries
-
-// Your web app's Firebase configuration
  const firebaseConfig = {
     apiKey: "AIzaSyAmMRTe1PHkO-eeSYijXDpclN6PJ9jVhyc",
     authDomain: "timesheeticm.firebaseapp.com",
@@ -151,8 +171,6 @@
     messagingSenderId: "23539994581",
     appId: "1:23539994581:web:3eeb88dfe3ba979946375c"
   };
-
-
   // -----------------------------------------
 
   const app = initializeApp(firebaseConfig);
@@ -170,10 +188,12 @@
   const YEARS = []; for (let y = thisYear - 2; y <= thisYear + 2; y++) YEARS.push(String(y));
 
   let currentUser = null;
+  let profile = null;   // { firstName, lastName, employeeId, email, role }
   let role = "user";
   let entries = [];
   let unsubEntries = null;
   let editId = null;
+  let suppressAuthUI = false;
   const filters = { year: "", month: "", task: "", name: "" };
 
   function fillSelect(sel, items, firstLabel) {
@@ -181,45 +201,113 @@
     if (firstLabel != null) { const o = document.createElement("option"); o.value = ""; o.textContent = firstLabel; sel.appendChild(o); }
     items.forEach(v => { const o = document.createElement("option"); o.value = v; o.textContent = v; sel.appendChild(o); });
   }
-
   function esc(s) { const d = document.createElement("div"); d.textContent = s ?? ""; return d.innerHTML; }
 
-  // ---------- auth ----------
-  window.signUp = async () => {
-    const email = document.getElementById("email").value.trim();
-    const password = document.getElementById("password").value;
-    try { await createUserWithEmailAndPassword(auth, email, password); }
-    catch (e) { document.getElementById("authError").textContent = e.message; }
+  // ---------- button loading helper ----------
+  function setBtnLoading(btn, loading, loadingLabel) {
+    if (loading) {
+      btn.dataset.originalHtml = btn.innerHTML;
+      btn.innerHTML = '<span class="spinner"></span>' + (loadingLabel || "Please wait...");
+      btn.disabled = true;
+    } else {
+      btn.innerHTML = btn.dataset.originalHtml || btn.innerHTML;
+      btn.disabled = false;
+    }
+  }
+
+  // ---------- auth view toggling ----------
+  window.showRegister = () => {
+    document.getElementById("authError").textContent = "";
+    document.getElementById("authSuccess").textContent = "";
+    document.getElementById("regError").textContent = "";
+    document.getElementById("loginView").style.display = "none";
+    document.getElementById("registerView").style.display = "block";
   };
+  window.showLogin = (successMsg) => {
+    document.getElementById("regError").textContent = "";
+    document.getElementById("registerView").style.display = "none";
+    document.getElementById("loginView").style.display = "block";
+    document.getElementById("authError").textContent = "";
+    document.getElementById("authSuccess").textContent = successMsg || "";
+  };
+
+  // ---------- auth actions ----------
   window.signIn = async () => {
-    const email = document.getElementById("email").value.trim();
-    const password = document.getElementById("password").value;
-    try { await signInWithEmailAndPassword(auth, email, password); }
-    catch (e) { document.getElementById("authError").textContent = e.message; }
+    const btn = document.getElementById("loginBtn");
+    const email = document.getElementById("loginEmail").value.trim();
+    const password = document.getElementById("loginPassword").value;
+    document.getElementById("authError").textContent = "";
+    if (!email || !password) { document.getElementById("authError").textContent = "Enter email and password."; return; }
+    setBtnLoading(btn, true, "Logging in...");
+    try {
+      await signInWithEmailAndPassword(auth, email, password);
+    } catch (e) {
+      document.getElementById("authError").textContent = e.message;
+    } finally {
+      setBtnLoading(btn, false);
+    }
   };
+
+  window.submitRegister = async () => {
+    const btn = document.getElementById("registerBtn");
+    const firstName = document.getElementById("regFirstName").value.trim();
+    const lastName = document.getElementById("regLastName").value.trim();
+    const employeeId = document.getElementById("regEmployeeId").value.trim();
+    const email = document.getElementById("regEmail").value.trim();
+    const password = document.getElementById("regPassword").value;
+    document.getElementById("regError").textContent = "";
+    if (!firstName || !lastName || !employeeId || !email || !password) {
+      document.getElementById("regError").textContent = "All fields are required.";
+      return;
+    }
+    setBtnLoading(btn, true, "Creating account...");
+    suppressAuthUI = true;
+    try {
+      const cred = await createUserWithEmailAndPassword(auth, email, password);
+      await setDoc(doc(db, "users", cred.user.uid), {
+        firstName, lastName, employeeId, email, role: "user"
+      });
+      await signOut(auth);
+      suppressAuthUI = false;
+      document.getElementById("regFirstName").value = "";
+      document.getElementById("regLastName").value = "";
+      document.getElementById("regEmployeeId").value = "";
+      document.getElementById("regEmail").value = "";
+      document.getElementById("regPassword").value = "";
+      showLogin("Account created. Please log in.");
+    } catch (e) {
+      suppressAuthUI = false;
+      document.getElementById("regError").textContent = e.message;
+    } finally {
+      setBtnLoading(btn, false);
+    }
+  };
+
   window.logOut = () => signOut(auth);
 
   onAuthStateChanged(auth, async (user) => {
+    if (suppressAuthUI) return;
     if (unsubEntries) { unsubEntries(); unsubEntries = null; }
     if (user) {
       currentUser = user;
       const uref = doc(db, "users", user.uid);
       const snap = await getDoc(uref);
-      if (!snap.exists()) {
-        await setDoc(uref, { email: user.email, role: "user" });
-        role = "user";
-      } else {
-        role = snap.data().role || "user";
-      }
+      profile = snap.exists() ? snap.data() : { firstName: "", lastName: "", employeeId: "", email: user.email, role: "user" };
+      role = profile.role || "user";
+
       document.getElementById("authBox").style.display = "none";
       document.getElementById("appBox").style.display = "block";
-      document.getElementById("roleBadge").textContent = role === "admin" ? "Admin · " + user.email : user.email;
+      const displayName = (profile.firstName || profile.lastName)
+        ? `${profile.firstName} ${profile.lastName} (${profile.employeeId || "—"})`
+        : user.email;
+      document.getElementById("roleBadge").textContent = role === "admin" ? "Admin · " + displayName : displayName;
       document.getElementById("viewMode").style.display = role === "admin" ? "inline-block" : "none";
       document.getElementById("fNameWrap").style.display = role === "admin" ? "flex" : "none";
       initFormOptions();
       subscribeEntries();
     } else {
       currentUser = null;
+      profile = null;
       document.getElementById("authBox").style.display = "block";
       document.getElementById("appBox").style.display = "none";
     }
@@ -268,7 +356,10 @@
     if (filters.year && String(e.year) !== filters.year) return false;
     if (filters.month && e.month !== filters.month) return false;
     if (filters.task && e.task !== filters.task) return false;
-    if (filters.name && !(e.userEmail || "").toLowerCase().includes(filters.name)) return false;
+    if (filters.name) {
+      const hay = ((e.employeeName || "") + " " + (e.employeeId || "") + " " + (e.userEmail || "")).toLowerCase();
+      if (!hay.includes(filters.name)) return false;
+    }
     return true;
   }
 
@@ -300,7 +391,7 @@
           <div class="entry-main">
             <div class="entry-top">
               <span class="tag">${esc(e.task)}</span>
-              ${role === "admin" ? `<span class="entry-user">${esc(e.userEmail)}</span>` : ""}
+              ${role === "admin" ? `<span class="entry-user">${esc(e.employeeName || e.userEmail)}${e.employeeId ? " · " + esc(e.employeeId) : ""}</span>` : ""}
             </div>
             <div class="entry-topic">${esc(e.topic) || '<span style="color:var(--muted)">(no topic)</span>'}</div>
             ${e.info ? `<div class="entry-info">${esc(e.info)}</div>` : ""}
@@ -340,6 +431,7 @@
   window.closeEntry = () => { document.getElementById("entryOverlay").classList.remove("show"); editId = null; };
 
   window.saveEntry = async () => {
+    const btn = document.getElementById("entrySaveBtn");
     const year = document.getElementById("eYear").value;
     const month = document.getElementById("eMonth").value;
     const task = document.getElementById("eTask").value;
@@ -348,17 +440,27 @@
     const info = document.getElementById("eInfo").value.trim();
     if (!year || !month || !task || days === "") { alert("Year, Month, Task and Days are required."); return; }
 
-    if (editId) {
-      const ref = doc(db, "timeEntries", editId);
-      await updateDoc(ref, { year, month, task, topic, days, info });
-    } else {
-      await addDoc(collection(db, "timeEntries"), {
-        userId: currentUser.uid, userEmail: currentUser.email,
-        year, month, task, topic, days, info,
-        createdAt: serverTimestamp(), createdAtMs: Date.now()
-      });
+    setBtnLoading(btn, true, "Saving...");
+    try {
+      if (editId) {
+        const ref = doc(db, "timeEntries", editId);
+        await updateDoc(ref, { year, month, task, topic, days, info });
+      } else {
+        await addDoc(collection(db, "timeEntries"), {
+          userId: currentUser.uid,
+          userEmail: currentUser.email,
+          employeeName: `${profile.firstName} ${profile.lastName}`.trim(),
+          employeeId: profile.employeeId || "",
+          year, month, task, topic, days, info,
+          createdAt: serverTimestamp(), createdAtMs: Date.now()
+        });
+      }
+      closeEntry();
+    } catch (e) {
+      alert("Could not save: " + e.message);
+    } finally {
+      setBtnLoading(btn, false);
     }
-    closeEntry();
   };
 
   async function removeEntry(id) {
@@ -373,16 +475,22 @@
     return /[",\n]/.test(s) ? '"' + s.replace(/"/g, '""') + '"' : s;
   }
   document.getElementById("exportBtn").onclick = () => {
-    const filtered = entries.filter(passes);
-    const header = ["Year", "Month", "Employee", "Task", "Topic", "Days", "Info"];
-    const rows = filtered.map(e => [e.year, e.month, e.userEmail, e.task, e.topic, e.days, e.info]);
-    const csv = [header, ...rows].map(r => r.map(csvEscape).join(",")).join("\n");
-    const blob = new Blob([csv], { type: "text/csv" });
-    const a = document.createElement("a");
-    a.href = URL.createObjectURL(blob);
-    a.download = "time-recording-export.csv";
-    a.click();
-    URL.revokeObjectURL(a.href);
+    const btn = document.getElementById("exportBtn");
+    setBtnLoading(btn, true, "Exporting...");
+    try {
+      const filtered = entries.filter(passes);
+      const header = ["Employee Name", "Employee ID", "Year", "Month", "Task", "Topic", "Days", "Info"];
+      const rows = filtered.map(e => [e.employeeName || "", e.employeeId || "", e.year, e.month, e.task, e.topic, e.days, e.info]);
+      const csv = [header, ...rows].map(r => r.map(csvEscape).join(",")).join("\n");
+      const blob = new Blob([csv], { type: "text/csv" });
+      const a = document.createElement("a");
+      a.href = URL.createObjectURL(blob);
+      a.download = "time-recording-export.csv";
+      a.click();
+      URL.revokeObjectURL(a.href);
+    } finally {
+      setBtnLoading(btn, false);
+    }
   };
 
   // ---------- CSV import ----------
@@ -390,32 +498,41 @@
   document.getElementById("fileInput").onchange = (e) => {
     const file = e.target.files[0];
     if (!file) return;
+    const btn = document.getElementById("importBtn");
+    setBtnLoading(btn, true, "Importing...");
     const reader = new FileReader();
     reader.onload = async () => {
-      const text = reader.result;
-      const lines = text.split(/\r?\n/).filter(l => l.trim().length);
-      if (lines.length < 2) { alert("CSV has no data rows."); return; }
-      const header = lines[0].split(",").map(h => h.trim().toLowerCase());
-      const idx = (name) => header.indexOf(name);
-      const iYear = idx("year"), iMonth = idx("month"), iTask = idx("task"), iTopic = idx("topic"), iDays = idx("days"), iInfo = idx("info");
-      if (iYear < 0 || iMonth < 0 || iTask < 0 || iDays < 0) { alert("CSV must include Year, Month, Task, Days columns."); return; }
-      let count = 0;
-      for (let i = 1; i < lines.length; i++) {
-        const cells = lines[i].match(/(".*?"|[^,]+)(?=,|$)/g) || [];
-        const clean = cells.map(c => c.replace(/^"|"$/g, "").replace(/""/g, '"').trim());
-        const year = clean[iYear], month = clean[iMonth], task = clean[iTask], days = clean[iDays];
-        if (!year || !month || !task || days === "") continue;
-        await addDoc(collection(db, "timeEntries"), {
-          userId: currentUser.uid, userEmail: currentUser.email,
-          year, month, task,
-          topic: iTopic >= 0 ? clean[iTopic] : "",
-          days, info: iInfo >= 0 ? clean[iInfo] : "",
-          createdAt: serverTimestamp(), createdAtMs: Date.now()
-        });
-        count++;
+      try {
+        const text = reader.result;
+        const lines = text.split(/\r?\n/).filter(l => l.trim().length);
+        if (lines.length < 2) { alert("CSV has no data rows."); return; }
+        const header = lines[0].split(",").map(h => h.trim().toLowerCase());
+        const idx = (name) => header.indexOf(name);
+        const iYear = idx("year"), iMonth = idx("month"), iTask = idx("task"), iTopic = idx("topic"), iDays = idx("days"), iInfo = idx("info");
+        if (iYear < 0 || iMonth < 0 || iTask < 0 || iDays < 0) { alert("CSV must include Year, Month, Task, Days columns."); return; }
+        let count = 0;
+        for (let i = 1; i < lines.length; i++) {
+          const cells = lines[i].match(/(".*?"|[^,]+)(?=,|$)/g) || [];
+          const clean = cells.map(c => c.replace(/^"|"$/g, "").replace(/""/g, '"').trim());
+          const year = clean[iYear], month = clean[iMonth], task = clean[iTask], days = clean[iDays];
+          if (!year || !month || !task || days === "") continue;
+          await addDoc(collection(db, "timeEntries"), {
+            userId: currentUser.uid,
+            userEmail: currentUser.email,
+            employeeName: `${profile.firstName} ${profile.lastName}`.trim(),
+            employeeId: profile.employeeId || "",
+            year, month, task,
+            topic: iTopic >= 0 ? clean[iTopic] : "",
+            days, info: iInfo >= 0 ? clean[iInfo] : "",
+            createdAt: serverTimestamp(), createdAtMs: Date.now()
+          });
+          count++;
+        }
+        alert("Imported " + count + " entries under your account.");
+        e.target.value = "";
+      } finally {
+        setBtnLoading(btn, false);
       }
-      alert("Imported " + count + " entries under your account.");
-      e.target.value = "";
     };
     reader.readAsText(file);
   };
